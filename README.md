@@ -20,6 +20,15 @@ other using the camera's trigger-in port.
       - Green: Running pulse train
   * The other on-board LED #13 will flash red with each pulse.
 
+### Serial commands
+  ``?``     : Show current settings 
+  
+  ``DT...`` : Set the pulse interval `DT` to ... msecs
+  
+  ``T...``  : Set the measurement time `T_meas` to ... msecs
+  
+  ``s``     : Start / stop
+  
 ### Hardware
   * Adafruit Feather M4 Express
   * Adafruit TermBlock FeatherWing #2926
