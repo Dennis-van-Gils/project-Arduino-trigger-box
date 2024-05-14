@@ -18,7 +18,7 @@ other using the camera's trigger-in port.
   * The RGB LED indicates the status.
       - Blue : Idle
       - Green: Running pulse train
-  * The other on-board LED #13 will flash red with each pulse.
+  * The on-board LED #13 will flash red with each pulse.
 
 ### Serial commands
   ``?``     : Show current settings
@@ -36,4 +36,5 @@ other using the camera's trigger-in port.
 
   Or:
 
-  * Arduino Uno (Does not have an onboard RGB LED but is native 5 V logic)
+  * Arduino Uno (But this does not have an onboard RGB LED, is only 16-bits and
+    hence, the `T_meas` parameter is removed, but it is native 5 V logic.)
