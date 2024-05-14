@@ -1,5 +1,6 @@
 /*------------------------------------------------------------------------------
 Arduino trigger box
+https://github.com/Dennis-van-Gils/project-Arduino-trigger-box
 
 A configurable TTL pulse train generator on digital outputs D05 and D06. Can be
 used to e.g. trigger (Ximea) cameras to acquire pictures in sync with each
@@ -29,17 +30,16 @@ other using the camera's trigger-in port.
     D06 and D09 to 5 V.
 
   Or:
-  * Arduino Uno (does not have onboard RGB LED but is native 5 V logic)
-
-https://github.com/Dennis-van-Gils/project-Arduino-trigger-box
+  * Arduino Uno (But this does not have an onboard RGB LED, is only 16-bits and
+    hence, the `T_meas` parameter is removed, but it is native 5 V logic.)
 
 Dennis van Gils
 14-05-2024
 ------------------------------------------------------------------------------*/
 
-#include "DvG_SerialCommand.h"
-#include "Streaming.h"
 #include <Arduino.h>
+
+#include "DvG_SerialCommand.h"
 
 #ifdef _VARIANT_FEATHER_M4_
 #include "Adafruit_NeoPixel.h"
@@ -209,47 +209,47 @@ void loop() {
         stop_train();
       }
 
-    } else {
+    } else if (!f_running) {
       // clang-format off
-      Ser << "-------------------------------------------------------------------" << endl
-          << "  Arduino trigger box" << endl
-          << "  https://github.com/Dennis-van-Gils/project-Arduino-trigger-box" << endl << endl
-          << "  A configurable TTL pulse train generator on digital outputs" << endl
-          << "  D05 and D06. Can be used to e.g. trigger (Ximea) cameras to" << endl
-          << "  acquire pictures in sync with each other using the camera's" << endl
-          << "  trigger-in port." << endl
-          << "-------------------------------------------------------------------" << endl
-          << endl
-          << "  <5ms>" << endl
-          << "  ┌───┐      ┌───┐      ┌───┐" << endl
-          << "  │   │      │   │      │   │" << endl
-          << "  │   │      │   │      │   │" << endl
-          << "  ┘   └──────┘   └──────┘   └────── --> T_meas" << endl
-          << "  <    DT    >" << endl
-          << endl
-          << "  * The pulse period `DT` can be set from 10 msec upwards to hours" << endl
-          << "    with a resolution of 1 msec." << endl
+      Ser.println("-------------------------------------------------------------------");
+      Ser.println("  Arduino trigger box");
+      Ser.println("  https://github.com/Dennis-van-Gils/project-Arduino-trigger-box");
+      Ser.println("");
+      Ser.println("  A configurable TTL pulse train generator on digital outputs");
+      Ser.println("  D05 and D06. Can be used to e.g. trigger (Ximea) cameras to");
+      Ser.println("  acquire pictures in sync with each other using the camera's");
+      Ser.println("  trigger-in port.");
+      Ser.println("-------------------------------------------------------------------");
+      Ser.println("");
+      Ser.println("  <5ms>");
+      Ser.println("  ┌───┐      ┌───┐      ┌───┐");
+      Ser.println("  │   │      │   │      │   │");
+      Ser.println("  │   │      │   │      │   │");
+      Ser.println("  ┘   └──────┘   └──────┘   └────── --> T_meas");
+      Ser.println("  <    DT    >");
+      Ser.println("");
+      Ser.println("  * The pulse period `DT` can be set from 10 msec upwards to hours");
+      Ser.println("    with a resolution of 1 msec.");
 #ifdef _VARIANT_FEATHER_M4_
-          << endl
-          << "  * The duration of the pulse train `T_meas`, i.e. the measurement" << endl
-          << "    time, can be set up to a maximum of 49.7 days." << endl
-          << endl
-          << "  * The RGB LED indicates the status." << endl
-          << "    Blue : Idle" << endl
-          << "    Green: Running pulse train" << endl
+      Ser.println("");
+      Ser.println("  * The duration of the pulse train `T_meas`, i.e. the measurement");
+      Ser.println("    time, can be set up to a maximum of 49.7 days.");
+      Ser.println("");
+      Ser.println("  * The RGB LED indicates the status.");
+      Ser.println("    Blue : Idle");
+      Ser.println("    Green: Running pulse train");
 #endif
-          << endl
-          << "  * The other onboard LED (#13) will flash red with each pulse." << endl
-          << endl
-          << "https://github.com/Dennis-van-Gils/project-Arduino-trigger-box" << endl
-          << endl;
-      Ser << "Commands:" << endl
-          << "  ?     : Show current settings" << endl
-          << "  DT... : Set the pulse interval `DT` to ... msecs" << endl
+      Ser.println("");
+      Ser.println("  * The onboard LED (#13) will flash red with each pulse.");
+      Ser.println("");
+      Ser.println("Commands:");
+      Ser.println("  ?     : Show current settings");
+      Ser.println("  DT... : Set the pulse interval `DT` to ... msecs");
 #ifdef _VARIANT_FEATHER_M4_
-          << "  T...  : Set the measurement time `T_meas` to ... msecs" << endl
+      Ser.println("  T...  : Set the measurement time `T_meas` to ... msecs");
 #endif
-          << "  s     : Start / stop" << endl << endl;
+      Ser.println("  s     : Start / stop");
+      Ser.println("");
       // clang-format on
     }
   }
