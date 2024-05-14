@@ -22,22 +22,33 @@ other using the camera's trigger-in port.
   * The other on-board LED #13 will flash red with each pulse.
 
 ### Hardware
+  Either:
   * Adafruit Feather M4 Express
   * Adafruit TermBlock FeatherWing #2926
   * 74AHCT125 'Quad Level-Shifter': To increase 3.3 V digital out of pins D05,
     D06 and D09 to 5 V.
 
+  Or:
+  * Arduino Uno (does not have onboard RGB LED but is native 5 V logic)
+
 https://github.com/Dennis-van-Gils/project-Arduino-trigger-box
 
 Dennis van Gils
-17-02-2021
+14-05-2024
 ------------------------------------------------------------------------------*/
+
+// Scratch pad
+// #ifdef ARDUINO_AVR_UNO
+// #ifdef _VARIANT_FEATHER_M4_
 
 // clang-format off
 #include <Arduino.h>
-#include "Adafruit_NeoPixel.h"
 #include "DvG_SerialCommand.h"
 #include "Streaming.h"
+
+#ifdef _VARIANT_FEATHER_M4_
+#include "Adafruit_NeoPixel.h"
+#endif
 // clang-format on
 
 #define PIN_CAM_1 4
@@ -55,8 +66,10 @@ bool f_HI = false;      // Is the pulse currently in the high state?
 uint32_t t_HI = 0;      // Starting time of the high state [msec]
 
 // Neopixel
+#ifdef _VARIANT_FEATHER_M4_
 #define NEO_BRIGHTNESS 3 // Brightness level [0 - 255]
 Adafruit_NeoPixel neo(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+#endif
 
 // Instantiate serial command listener
 #define Ser Serial
@@ -90,16 +103,20 @@ void start_train() {
   pulse_idx = 0;
   go_HI();
 
+#ifdef _VARIANT_FEATHER_M4_
   neo.setPixelColor(0, neo.Color(0, 255, 0)); // Green: running
   neo.show();
+#endif
 }
 
 void stop_train() {
   Ser.println("Pulse train stopped.");
   go_LO();
 
+#ifdef _VARIANT_FEATHER_M4_
   neo.setPixelColor(0, neo.Color(0, 0, 255)); // Blue: idle
   neo.show();
+#endif
 }
 
 String format_msecs(uint32_t all_msecs) {
@@ -127,10 +144,12 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   go_LO();
 
+#ifdef _VARIANT_FEATHER_M4_
   neo.begin();
   neo.setPixelColor(0, neo.Color(0, 0, 255)); // Blue: idle
   neo.setBrightness(NEO_BRIGHTNESS);
   neo.show();
+#endif
 }
 
 /*------------------------------------------------------------------------------
@@ -172,7 +191,8 @@ void loop() {
     } else {
       // clang-format off
       Ser << "-------------------------------------------------------------------" << endl
-          << "  Arduino trigger box" << endl << endl
+          << "  Arduino trigger box" << endl
+          << "  https://github.com/Dennis-van-Gils/project-Arduino-trigger-box" << endl << endl
           << "  A configurable TTL pulse train generator on digital outputs" << endl
           << "  D05 and D06. Can be used to e.g. trigger (Ximea) cameras to" << endl
           << "  acquire pictures in sync with each other using the camera's" << endl
@@ -191,10 +211,12 @@ void loop() {
           << endl
           << "  * The duration of the pulse train `T_meas`, i.e. the measurement" << endl
           << "    time, can be set up to a maximum of 49.7 days." << endl
+          #ifdef _VARIANT_FEATHER_M4_
           << endl
           << "  * The RGB LED indicates the status." << endl
           << "    Blue : Idle" << endl
           << "    Green: Running pulse train" << endl
+          #endif
           << endl
           << "  * The other onboard LED (#13) will flash red with each pulse." << endl
           << endl
