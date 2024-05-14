@@ -49,15 +49,26 @@ Dennis van Gils
 #define PIN_CAM_2 6
 #define PULSE_WIDTH 5 // [msec]
 
-uint32_t now = 0;                  // [msec] Will keep track of Arduino time
-uint32_t DT = 1000;                // [msec]
+uint32_t now = 0;   // [msec] Will keep track of Arduino time
+uint32_t DT = 1000; // [msec]
+
+#ifdef _VARIANT_FEATHER_M4_
 uint32_t T_meas = 8 * 3600 * 1000; // [msec]
+#endif
 
 bool f_running = false; // Is pulse train running?
 uint32_t t_start = 0;   // Starting time of the pulse train [msec]
 uint32_t pulse_idx = 0; // Pulse counter
 bool f_HI = false;      // Is the pulse currently in the high state?
 uint32_t t_HI = 0;      // Starting time of the high state [msec]
+
+// Character buffer for formatted time string
+const uint8_t BUFLEN_TIME = 21;
+char buf_time[BUFLEN_TIME] = "";
+
+// Character buffer for global messages
+const uint8_t BUFLEN = 64;
+char buf[BUFLEN] = "";
 
 // Neopixel
 #ifdef _VARIANT_FEATHER_M4_
@@ -73,14 +84,30 @@ DvG_SerialCommand sc(Ser);
   functions
 ------------------------------------------------------------------------------*/
 
+void format_msecs(uint32_t all_msecs) {
+  uint32_t all_secs = all_msecs / 1000;
+  uint32_t rem_secs = all_secs % 3600;
+  uint16_t h = all_secs / 3600;
+  uint16_t m = rem_secs / 60;
+  uint16_t s = rem_secs % 60;
+  uint16_t u = all_msecs % 1000;
+
+  snprintf(buf_time, BUFLEN_TIME, "%02d:%02d:%02d.%03d", h, m, s, u);
+}
+
 void go_HI() {
+  static const uint8_t BUF_LEN = 64;
+  static char buf[BUF_LEN] = "";
+
   f_HI = true;
   pulse_idx += 1;
   digitalWrite(PIN_CAM_1, HIGH);
   digitalWrite(PIN_CAM_2, HIGH);
   digitalWrite(LED_BUILTIN, HIGH);
 
-  Ser << "#" << pulse_idx << " @ t = " << now - t_start << endl;
+  format_msecs(now - t_start);
+  snprintf(buf, BUF_LEN, "# %ld @ t = %s", pulse_idx, buf_time);
+  Ser.println(buf);
 }
 
 void go_LO() {
@@ -111,19 +138,6 @@ void stop_train() {
   neo.setPixelColor(0, neo.Color(0, 0, 255)); // Blue: idle
   neo.show();
 #endif
-}
-
-String format_msecs(uint32_t all_msecs) {
-  uint32_t all_secs = all_msecs / 1000;
-  uint32_t rem_secs = all_secs % 3600;
-  uint16_t h = all_secs / 3600;
-  uint16_t m = rem_secs / 60;
-  uint16_t s = rem_secs % 60;
-  uint16_t u = all_msecs % 1000;
-  char buf[21];
-
-  sprintf(buf, "%02d:%02d:%02d.%03d", h, m, s, u);
-  return buf;
 }
 
 /*------------------------------------------------------------------------------
@@ -157,21 +171,34 @@ void loop() {
     strCmd = sc.getCmd();
 
     if (strcmp(strCmd, "?") == 0) {
-      Ser << "Current settings:" << endl
-          << "  DT     = " << format_msecs(DT) << endl
-          << "  T_meas = " << format_msecs(T_meas) << endl;
+      Ser.println("Current settings:");
+      format_msecs(DT);
+      Ser.print("  DT     = ");
+      Ser.println(buf_time);
+
+#ifdef _VARIANT_FEATHER_M4_
+      format_msecs(T_meas);
+      Ser.print("  T_meas = ");
+      Ser.println(buf_time);
+#endif
 
     } else if ((strncmp(strCmd, "DT", 2) == 0) ||
                (strncmp(strCmd, "dt", 2) == 0)) {
       DT = strtol(&strCmd[2], NULL, 10);
       DT = constrain(DT, 10, pow(2, 32) - 1);
-      Ser << "  DT     = " << format_msecs(DT) << endl;
+      Ser.print("  DT     = ");
+      format_msecs(DT);
+      Ser.println(buf_time);
 
+#ifdef _VARIANT_FEATHER_M4_
     } else if ((strncmp(strCmd, "T", 1) == 0) ||
                (strncmp(strCmd, "t", 1) == 0)) {
       T_meas = strtol(&strCmd[1], NULL, 10);
       T_meas = constrain(T_meas, 10, pow(2, 32) - 1);
-      Ser << "  T_meas = " << format_msecs(T_meas) << endl;
+      Ser.print("  T_meas = ");
+      format_msecs(T_meas);
+      Ser.println(buf_time);
+#endif
 
     } else if (strcmp(strCmd, "s") == 0) {
       f_running = !f_running;
@@ -202,15 +229,15 @@ void loop() {
           << endl
           << "  * The pulse period `DT` can be set from 10 msec upwards to hours" << endl
           << "    with a resolution of 1 msec." << endl
+#ifdef _VARIANT_FEATHER_M4_
           << endl
           << "  * The duration of the pulse train `T_meas`, i.e. the measurement" << endl
           << "    time, can be set up to a maximum of 49.7 days." << endl
-          #ifdef _VARIANT_FEATHER_M4_
           << endl
           << "  * The RGB LED indicates the status." << endl
           << "    Blue : Idle" << endl
           << "    Green: Running pulse train" << endl
-          #endif
+#endif
           << endl
           << "  * The other onboard LED (#13) will flash red with each pulse." << endl
           << endl
@@ -219,7 +246,9 @@ void loop() {
       Ser << "Commands:" << endl
           << "  ?     : Show current settings" << endl
           << "  DT... : Set the pulse interval `DT` to ... msecs" << endl
+#ifdef _VARIANT_FEATHER_M4_
           << "  T...  : Set the measurement time `T_meas` to ... msecs" << endl
+#endif
           << "  s     : Start / stop" << endl << endl;
       // clang-format on
     }
@@ -227,10 +256,12 @@ void loop() {
 
   now = millis();
 
+#ifdef _VARIANT_FEATHER_M4_
   if (f_running && (now - t_start >= T_meas)) {
     f_running = false;
     stop_train();
   }
+#endif
 
   if (f_running) {
     if (f_HI && (now - t_HI >= PULSE_WIDTH)) {
